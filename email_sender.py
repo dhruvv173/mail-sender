@@ -2,12 +2,14 @@ import smtplib
 from email.message import EmailMessage
 import csv
 import os
+DRY_RUN = True  # Set to False to send real emails
 
 EMAIL_ADDRESS = os.environ['EMAIL_ADDRESS']
 EMAIL_PASSWORD = os.environ['EMAIL_PASSWORD']
 RESUME_LINK = "https://drive.google.com/file/d/1a2b3cXYZ/view?usp=sharing"
 
 def send_email(to_email, recruiter_name, company_name):
+
     subject = f"Exploring SDE-1 Opportunities at {company_name}"
 
     body = f"""Hi {recruiter_name},
@@ -34,11 +36,13 @@ https://linkedin.com/in/dhruvv173/
     msg['From'] = EMAIL_ADDRESS
     msg['To'] = to_email
     msg.set_content(body)
-
-    with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
-        smtp.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
-        smtp.send_message(msg)
-        print(f"✅ Sent email to {recruiter_name} at {company_name}")
+    if DRY_RUN:
+        print(f"[DRY RUN] Would send email to {recruiter_name} ({to_email}) at {company_name}")
+    else:
+        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
+            smtp.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
+            smtp.send_message(msg)
+            print(f"✅ Sent email to {recruiter_name} at {company_name}")
 
 def main():
     with open('recruiters.csv') as f:
