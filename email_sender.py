@@ -2,7 +2,7 @@ import smtplib
 from email.message import EmailMessage
 import csv
 import os
-DRY_RUN = True  # Set to False to send real emails
+DRY_RUN = False  # Set to False to send real emails
 
 EMAIL_ADDRESS = os.environ['EMAIL_ADDRESS']
 EMAIL_PASSWORD = os.environ['EMAIL_PASSWORD']
