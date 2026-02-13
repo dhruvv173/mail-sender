@@ -3,6 +3,8 @@ from email.message import EmailMessage
 import csv
 import os
 import time
+from dotenv import load_dotenv
+load_dotenv()
 
 # -------- CONFIG --------
 DRY_RUN = True   # Set to False to actually send emails
