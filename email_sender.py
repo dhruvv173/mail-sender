@@ -2,28 +2,43 @@ import smtplib
 from email.message import EmailMessage
 import csv
 import os
-DRY_RUN = False  # Set to False to send real emails
+import time
 
-EMAIL_ADDRESS = os.environ['EMAIL_ADDRESS']
-EMAIL_PASSWORD = os.environ['EMAIL_PASSWORD']
-RESUME_LINK = "https://drive.google.com/file/d/1a2b3cXYZ/view?usp=sharing"
+# -------- CONFIG --------
+DRY_RUN = True   # Set to False to actually send emails
+DELAY_SECONDS = 6  # Delay between emails to avoid rate limits
 
-def send_email(to_email, recruiter_name, company_name):
+EMAIL_ADDRESS = os.environ.get("EMAIL_ADDRESS")
+EMAIL_PASSWORD = os.environ.get("EMAIL_PASSWORD")
 
-    subject = f"Exploring SDE-1 Opportunities at {company_name}"
+RESUME_LINK = "https://drive.google.com/file/d/1lQOO2qa5_uwmPrXQpChEXbzLLBckYNRJ/view?usp=drive_link"
+
+SUBJECT = "Backend Engineer - Exploring Opportunities"
+
+
+# -------- HELPER FUNCTION --------
+def extract_name(email):
+    """Extracts a readable first name from email if CSV doesn't contain one."""
+    name_part = email.split("@")[0]
+    name_part = name_part.replace("_", ".")
+    return name_part.split(".")[0].capitalize()
+
+
+# -------- EMAIL SENDER --------
+def send_email(to_email, recruiter_name):
 
     body = f"""Hi {recruiter_name},
 
 I hope you're doing well! My name is Dhruv Parmar, and I'm currently a Software Engineer at Jio, specializing in backend development.
 
-I have 19 months of experience working on backend systems, where I've led API migrations, improved performance, and ensured maintainability without compromising functionality.
+I have 2+ years of experience working on backend systems, where I've led API migrations, improved performance, and ensured maintainability without compromising functionality.
 
-I'm interested in applying for SDE-1 roles at {company_name} and would love to connect to explore potential opportunities.
+I'm interested in applying for SDE-1 roles at your organization and would love to connect to explore potential opportunities.
 
-I have attached my resume to this email. Alternatively, you can also view it here: {RESUME_LINK}  
+You can view my resume here:
+{RESUME_LINK}
+
 Please let me know if you'd be open to a quick chat.
-
-Looking forward to your response!
 
 Best regards,  
 Dhruv Parmar  
@@ -32,23 +47,46 @@ https://linkedin.com/in/dhruvv173/
 """
 
     msg = EmailMessage()
-    msg['Subject'] = subject
-    msg['From'] = EMAIL_ADDRESS
-    msg['To'] = to_email
+    msg["Subject"] = SUBJECT
+    msg["From"] = EMAIL_ADDRESS
+    msg["To"] = to_email
     msg.set_content(body)
+
     if DRY_RUN:
-        print(f"[DRY RUN] Would send email to {recruiter_name} ({to_email}) at {company_name}")
-    else:
-        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
+        print(f"[DRY RUN] Would send email to {recruiter_name} ({to_email})")
+        return
+
+    try:
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
             smtp.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
             smtp.send_message(msg)
-            print(f"✅ Sent email to {recruiter_name} at {company_name}")
+            print(f"✅ Sent email to {recruiter_name} ({to_email})")
 
+    except Exception as e:
+        print(f"❌ Failed to send to {to_email}: {e}")
+
+
+# -------- MAIN --------
 def main():
-    with open('recruiters.csv') as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            send_email(row['Email'], row['FirstName'], row['Company'])
+    if not EMAIL_ADDRESS or not EMAIL_PASSWORD:
+        print("ERROR: Please set EMAIL_ADDRESS and EMAIL_PASSWORD environment variables.")
+        return
+
+    try:
+        with open("recruiters.csv", newline="", encoding="utf-8") as f:
+            reader = csv.DictReader(f)
+
+            for row in reader:
+                email = row.get("Email")
+                name = row.get("FirstName") or extract_name(email)
+
+                if email:
+                    send_email(email, name)
+                    time.sleep(DELAY_SECONDS)
+
+    except FileNotFoundError:
+        print("ERROR: recruiters.csv not found.")
+
 
 if __name__ == "__main__":
     main()
